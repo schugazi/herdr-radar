@@ -18,10 +18,11 @@ test('splitTitle wraps at a space, cuts an overlong word, ellipsises row two', (
 const line = { mark: 'x', split: '', logo: 'L', titlePrefix: '' };
 
 test('detail fields publish under the normal name unless the entry is stale', () => {
-  const fresh = state.stateTokens('idle', line, 'T', 'T2', { model: 'Opus 5.5', tab: 'radar' });
+  const fresh = state.stateTokens('idle', line, 'T', 'T2', { model: 'Opus 5.5', topic: 'radar' });
   assert.equal(fresh.d_model, 'Opus 5.5');
   assert.equal(fresh.d_model_stale, null);
-  assert.equal(fresh.d_tab, 'radar');
+  assert.equal(fresh.d_topic, 'radar');
+  assert.equal(fresh.d_topic2, null);
   assert.equal(fresh.d_effort, null);
   assert.equal(fresh.title2_idle, 'T2');
   assert.equal(fresh.title2_working, null);
@@ -34,7 +35,7 @@ test('detail fields publish under the normal name unless the entry is stale', ()
 });
 
 test('every published name is owned, so purge and the orphan sweep clear it', () => {
-  const tokens = state.stateTokens('working', line, 'T', 'T2', { model: 'm', tab: 't' });
+  const tokens = state.stateTokens('working', line, 'T', 'T2', { model: 'm', topic: 't', topic2: 't2' });
   for (const name of Object.keys(tokens)) {
     if (name.startsWith('name_')) continue; // legacy, nulled on every write
     assert.ok(state.OWNED_TOKENS.includes(name), name);
