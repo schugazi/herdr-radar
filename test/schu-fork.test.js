@@ -60,3 +60,48 @@ test('every published name is owned, so purge and the orphan sweep clear it', ()
     assert.ok(state.OWNED_TOKENS.includes(name), name);
   }
 });
+
+test('agent status is subscribed per pane, since a bare entry rejects the whole subscription', () => {
+  const subs = require('../lib/subscribe').subscriptions(['w1:p1', 'w2:p3']);
+  const status = subs.filter((s) => s.type === 'pane.agent_status_changed');
+  assert.deepEqual(status.map((s) => s.pane_id), ['w1:p1', 'w2:p3']);
+  assert.ok(subs.every((s) => s.type !== 'pane.agent_status_changed' || s.pane_id));
+});
+
+test('a resubscribe cancels the pending retry, so one subscription stays open', async () => {
+  const net = require('node:net');
+  const os = require('node:os');
+  const path = require('node:path');
+  const sock = path.join(os.tmpdir(), `radar-sub-${process.pid}.sock`);
+  const open = new Set();
+  let first = true;
+  const server = net.createServer((conn) => {
+    open.add(conn);
+    conn.on('close', () => open.delete(conn));
+    conn.once('data', () => {
+      // The first subscription names a pane that just closed: error, then close.
+      if (first) {
+        first = false;
+        conn.end('{"id":"daemon-sub","error":{"code":"pane_not_found"}}\n');
+      } else conn.write('{"id":"daemon-sub","result":{"type":"subscription_started"}}\n');
+    });
+  });
+  await new Promise((resolve) => server.listen(sock, resolve));
+  process.env.HERDR_SOCKET_PATH = sock;
+  const sub = require('../lib/subscribe').start({ onWake() {}, onGone() {} });
+  try {
+    sub.panes(['w1:p1']);
+    await new Promise((resolve) => setTimeout(resolve, 100)); // first one failed, retry pending
+    sub.panes([]);
+    await new Promise((resolve) => setTimeout(resolve, 1300)); // past the first retry's backoff
+    assert.equal(open.size, 1);
+    sub.stop();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    assert.equal(open.size, 0);
+  } finally {
+    sub.stop();
+    for (const conn of open) conn.destroy();
+    delete process.env.HERDR_SOCKET_PATH;
+    server.close();
+  }
+});
