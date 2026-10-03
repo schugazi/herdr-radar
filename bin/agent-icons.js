@@ -73,7 +73,8 @@ function main() {
   const variant = arg('variant') ?? config.variant;
   const src = source();
   for (const { pane, agent } of targets()) {
-    if (typeof pane !== 'string') continue;
+    // schu fork: the dispatcher's rows are hand-owned (lib/state.js passive).
+    if (typeof pane !== 'string' || agent === 'droid') continue;
     // Agents with no mark get the token cleared rather than a stand-in that
     // would read as the wrong vendor.
     herdr.reportMetadata(pane, src, { [TOKEN]: logoFor(agent, variant) });

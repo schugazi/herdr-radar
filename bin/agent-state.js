@@ -27,13 +27,6 @@ const { stopAnimator } = require('../lib/stop');
 const { detachedNode } = require('../lib/spawn');
 
 async function spawnAnimator() {
-  // First start after an install: write the managed blocks, install the font.
-  // Idempotent and stamped, so this is a cheap check on every later start.
-  try {
-    for (const note of require('../lib/setup').ensure()) console.log(note);
-  } catch (error) {
-    console.error(`setup: ${error.message}`);
-  }
   // Asked of the endpoint, not the pid file (lib/state.js daemonStatus). A
   // stalled daemon still holds the endpoint, so a fresh one could not bind
   // beside it: it has to go first.

@@ -19,11 +19,9 @@ const path = require('node:path');
 const { spawnSync } = require('node:child_process');
 
 const config = require('../lib/config');
-const palette = require('../lib/palette');
 const control = require('../lib/control');
 const state = require('../lib/state');
 const view = require('../lib/view');
-const managed = require('../lib/managed-config');
 const { detachedNode } = require('../lib/spawn');
 const { scrollTop } = require('../lib/scroll-window');
 const { pluginId, pluginConfigDir, ensureDir, stateRoot } = require('../lib/paths');
@@ -37,12 +35,6 @@ const identity = require('../lib/identity');
 const ORDER_MODE = { active: 'grouped', recent: 'recent', off: null };
 const MODE_ORDER = { grouped: 'active', recent: 'recent', null: 'off' };
 
-// Whether the plugin's sidebar rows are installed — the managed block's
-// presence in Herdr's config IS that state (lib/managed-config.js).
-function panelValue() {
-  return managed.inspect().text?.includes(managed.SIDEBAR_START) ? 'plugin' : 'herdr';
-}
-
 // The persisted order choice (lib/view.js), as the row's word.
 function orderValue() {
   return MODE_ORDER[view.mode()];
@@ -53,16 +45,11 @@ function orderValue() {
 // config key at all but live state, read by its `read` and switched from here
 // on save — the same two things the view keys switch, so a key press and this
 // popup never disagree about what the current state is.
+//
+// schu fork: no agents_panel, reorder_workspaces, variant, follow_appearance
+// or colors rows — each of those either rewrote Herdr's config or moved the
+// shared workspace order. The variant is pinned in the tracked config file.
 const FIELDS = [
-  {
-    key: 'agents_panel',
-    kind: 'enum',
-    options: ['plugin', 'herdr'],
-    fallback: 'plugin',
-    virtual: true,
-    read: panelValue,
-    help: "Whose Agents panel: the plugin's rows and order, or Herdr's own. Rarely changed, so it lives here, not on a key.",
-  },
   {
     key: 'order',
     kind: 'enum',
@@ -70,20 +57,7 @@ const FIELDS = [
     fallback: 'active',
     virtual: true,
     read: orderValue,
-    help: "Agents panel order: active (grouped, busiest first, stale last), recent (flat, by activity) or off (Herdr's own order). Applies while agents_panel is plugin.",
-  },
-  {
-    key: 'reorder_workspaces',
-    kind: 'bool',
-    fallback: false,
-    help: 'Make Herdr workspace indices follow Radar activity order, so prefix+shift+1..9 follows the panel.',
-  },
-  {
-    key: 'variant',
-    kind: 'enum',
-    options: ['auto', 'font', 'text', 'none'],
-    fallback: 'auto',
-    help: 'Vendor logos and state marks from the icon font, plain Unicode, or none. auto asks fontconfig (Linux only).',
+    help: "Agents panel order: active (grouped, busiest first, stale last), recent (flat, by activity) or off (Herdr's own order).",
   },
   {
     key: 'done_hold',
@@ -153,32 +127,6 @@ const FIELDS = [
     fallback: true,
     help: 'Drop the workspace name from a title when the header above already shows it.',
   },
-  {
-    key: 'worktree_mark',
-    kind: 'glyph',
-    fallback: '\uf418',
-    help: 'The mark on a worktree header, after the branch corner. Enter a codepoint like U+F418, or empty for none.',
-  },
-  {
-    key: 'follow_appearance',
-    kind: 'bool',
-    fallback: true,
-    help: "Follow the desktop's light/dark and switch Herdr's theme with it (once a minute).",
-  },
-  {
-    key: 'active_row_bg_light',
-    table: 'colors',
-    kind: 'color',
-    fallback: palette.chrome.light.active_row_bg,
-    help: "Selected-row fill written to [theme.custom] for a light theme. Empty = keep the theme's own.",
-  },
-  {
-    key: 'active_row_bg_dark',
-    table: 'colors',
-    kind: 'color',
-    fallback: palette.chrome.dark.active_row_bg,
-    help: "Selected-row fill for a dark theme. Empty = keep the theme's own.",
-  },
 ];
 
 /* --------------------------------------------------------------- config */
@@ -210,15 +158,9 @@ function currentValues(text) {
   return values;
 }
 
-// The Agents panel's two layers, in the order `agent-view --native` uses:
-// rows first (config rewrite + reload, only when the panel choice changed),
-// then the sort override, then the persisted choice. Herdr's own panel has
-// no override at all, so `order` only means something while the rows are
-// the plugin's; with the panel set to herdr the order is off, whatever the
-// row said.
-async function applyView({ panelOn, panelChanged, order }) {
-  if (panelChanged) view.setRows(panelOn);
-  const mode = panelOn ? ORDER_MODE[order] : null;
+// The sort override, then the persisted choice.
+async function applyView(order) {
+  const mode = ORDER_MODE[order];
   const reply = mode ? await view.apply(mode) : await view.clear();
   if (!reply || reply.error) throw new Error('could not switch the Agents panel order');
   view.setMode(mode);
@@ -440,15 +382,9 @@ class Editor {
 
   async save() {
     if (!this.dirty()) return (this.status = 'nothing changed');
-    const panel = FIELDS.find((f) => f.key === 'agents_panel');
     const order = FIELDS.find((f) => f.key === 'order');
-    const changed = (f) => this.values.get(f) !== this.saved.get(f);
-    const viewChanged = changed(panel) || changed(order);
-    const viewWanted = {
-      panelOn: this.effective(panel) === 'plugin',
-      panelChanged: changed(panel),
-      order: this.effective(order),
-    };
+    const viewChanged = this.values.get(order) !== this.saved.get(order);
+    const viewWanted = this.effective(order);
     try {
       saveValues(this.text, this.values);
     } catch (error) {

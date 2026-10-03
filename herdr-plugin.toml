@@ -17,31 +17,16 @@ platforms = ["linux", "macos", "windows"]
 # which works on Windows in Node (Python's os.kill raises WinError 87 there).
 # UTF-8 decoding of Herdr's JSON is the default rather than the ANSI codepage.
 
-# Install / remove the managed blocks in Herdr's config.toml without knowing
-# where the plugin lives — a GitHub install never shows the user its directory.
-[[actions]]
-id = "configure"
-title = "Configure: install the sidebar, tab-bar and theme blocks"
-description = "Write (or repair) the three managed blocks in Herdr's config.toml and reload."
-command = ["node", "bin/configure.js", "--apply", "--reload"]
+# schu fork: the sidebar rows live hand-written in Herdr's config.toml, so the
+# plugin never writes Herdr's or a terminal's config — no build hook, no
+# configure/unconfigure, no font install, no theme following. `teardown` is the
+# uninstall path.
 
 [[actions]]
-id = "install-font"
-title = "Font: install for this user and map codepoints in the terminal"
-description = "Copy the icon font into your user font directory (no admin needed) and write the codepoint map into ghostty/kitty configs that exist; other terminals get instructions in the log."
-command = ["node", "bin/install-font.js"]
-
-[[actions]]
-id = "uninstall-font"
-title = "Font: remove"
-description = "Remove the installed icon font and the terminal codepoint map this plugin wrote."
-command = ["node", "bin/install-font.js", "--uninstall"]
-
-[[actions]]
-id = "unconfigure"
-title = "Configure: remove the managed blocks"
-description = "Stop the daemon, clear every token it wrote, remove the three managed blocks from Herdr's config.toml and reload. Do this before uninstalling."
-command = ["node", "bin/configure.js", "--uninstall", "--reload"]
+id = "teardown"
+title = "Teardown: stop and clear everything"
+description = "Stop the daemon, clear the Agents view override and every token it wrote. Do this before unlinking."
+command = ["node", "bin/teardown.js"]
 
 [[actions]]
 id = "refresh"
@@ -58,7 +43,7 @@ command = ["node", "bin/agent-state.js"]
 [[actions]]
 id = "state-stop"
 title = "Agent state: stop animator"
-description = "Stop the lifecycle-state glyph animator and clear its marks. Titles and sort keys stay so the list stays readable; unconfigure clears everything."
+description = "Stop the lifecycle-state glyph animator and clear its marks. Titles and sort keys stay so the list stays readable; teardown clears everything."
 command = ["node", "bin/agent-state.js", "--stop"]
 
 # Herdr disables the panel's own grouped/priority toggle while an agent-view
@@ -76,32 +61,6 @@ id = "view-flip"
 title = "Agents: active <-> recent"
 description = "Flip between grouped-by-activity and flat-by-activity without leaving the plugin's order."
 command = ["node", "bin/agent-view.js", "--flip"]
-
-# The other two-state door, cut across the cycle rather than along it: in and
-# out of the plugin's Agents panel ENTIRELY — both the sort override and the
-# `[ui.sidebar.*]` rows that paint the logos and state colours. The two live in
-# different places (socket API vs config.toml), so this one alone rewrites
-# Herdr's config and reloads the server; the actions above are pure socket
-# calls. Coming back in always lands on `active` — no memory of which view you
-# left from, deliberately: view-flip is one key away, and a toggle that returns
-# somewhere different each time is worse than one you can predict. Pair the two
-# on separate keys and neither ever has to pass through a state you did not
-# want — this key picks ours-vs-Herdr's, that key picks which of ours.
-[[actions]]
-id = "view-native"
-title = "Agents: Herdr's panel <-> ours"
-description = "Toggle the whole Agents panel — order and row colours — between Herdr's own and the plugin's."
-command = ["node", "bin/agent-view.js", "--native"]
-
-# Runs when Herdr installs the plugin from GitHub (shown in the install
-# preview): writes the managed blocks and installs the icon font. It must
-# not start the daemon: the hook runs inside Herdr's temporary checkout,
-# which is renamed into place afterwards, and a process whose cwd is in
-# there blocks that rename on Windows (#23). The startup hooks below start
-# the daemon once the plugin is in place; a checkout linked with `plugin
-# link` gets the same setup from the daemon launcher on its first start.
-[[build]]
-command = ["node", "bin/setup.js"]
 
 # The settings popup: every plugin config key, edited in place and applied by
 # restarting the daemon. A popup rather than a split so it can sit over the
@@ -139,8 +98,3 @@ command = ["node", "bin/agent-view.js", "--reapply"]
 [[events]]
 on = "pane.agent_detected"
 command = ["node", "bin/agent-state.js"]
-
-# Appearance follow-up now lives on a timer inside the resident daemon
-# (agent-state.js requires bin/theme-sync and calls sync() once a minute).
-# It used to ride on pane.focused / agent_status_changed event hooks — a node
-# spawn per event — because nothing else survived long enough to own a timer.
