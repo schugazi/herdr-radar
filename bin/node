@@ -1,0 +1,10 @@
+#!/bin/sh
+# schu fork: run node even when Herdr's server PATH lacks it (nvm installs it
+# per shell, and a server started at boot never sourced nvm). Falls back to the
+# newest nvm-installed node. Children reuse process.execPath, so only the
+# manifest's own commands come through here.
+if ! command -v node >/dev/null 2>&1; then
+  dir=$(ls -d "${NVM_DIR:-$HOME/.nvm}"/versions/node/v*/bin 2>/dev/null | sort -V | tail -n 1)
+  [ -n "$dir" ] && PATH="$dir:$PATH"
+fi
+exec node "$@"

@@ -26,25 +26,25 @@ platforms = ["linux", "macos", "windows"]
 id = "teardown"
 title = "Teardown: stop and clear everything"
 description = "Stop the daemon, clear the Agents view override and every token it wrote. Do this before unlinking."
-command = ["node", "bin/teardown.js"]
+command = ["sh", "bin/node","bin/teardown.js"]
 
 [[actions]]
 id = "refresh"
 title = "Agent icons: refresh"
 description = "Reapply icon variants to all current panes."
-command = ["node", "bin/agent-icons.js"]
+command = ["sh", "bin/node","bin/agent-icons.js"]
 
 [[actions]]
 id = "state-start"
 title = "Agent state: start animator"
 description = "Start the lifecycle-state glyph animator."
-command = ["node", "bin/agent-state.js"]
+command = ["sh", "bin/node","bin/agent-state.js"]
 
 [[actions]]
 id = "state-stop"
 title = "Agent state: stop animator"
 description = "Stop the lifecycle-state glyph animator and clear its marks. Titles and sort keys stay so the list stays readable; teardown clears everything."
-command = ["node", "bin/agent-state.js", "--stop"]
+command = ["sh", "bin/node","bin/agent-state.js", "--stop"]
 
 # Herdr disables the panel's own grouped/priority toggle while an agent-view
 # override is active, so this action is both the way into the recent-first
@@ -54,13 +54,13 @@ command = ["node", "bin/agent-state.js", "--stop"]
 id = "view-toggle"
 title = "Agents: cycle order (active / recent / off)"
 description = "Cycle the Agents panel: grouped by activity, flat by activity, or the panel's own order."
-command = ["node", "bin/agent-view.js"]
+command = ["sh", "bin/node","bin/agent-view.js"]
 
 [[actions]]
 id = "view-flip"
 title = "Agents: active <-> recent"
 description = "Flip between grouped-by-activity and flat-by-activity without leaving the plugin's order."
-command = ["node", "bin/agent-view.js", "--flip"]
+command = ["sh", "bin/node","bin/agent-view.js", "--flip"]
 
 # The settings popup: every plugin config key, edited in place and applied by
 # restarting the daemon. A popup rather than a split so it can sit over the
@@ -69,7 +69,7 @@ command = ["node", "bin/agent-view.js", "--flip"]
 id = "settings"
 title = "herdr-radar settings"
 placement = "popup"
-command = ["node", "bin/settings.js"]
+command = ["sh", "bin/node","bin/settings.js"]
 width = 84
 height = "90%"
 
@@ -77,17 +77,17 @@ height = "90%"
 id = "settings"
 title = "Settings"
 description = "Open the settings popup."
-command = ["node", "bin/settings.js", "--open"]
+command = ["sh", "bin/node","bin/settings.js", "--open"]
 
 [[startup]]
-command = ["node", "bin/agent-icons.js"]
+command = ["sh", "bin/node","bin/agent-icons.js"]
 
 [[startup]]
-command = ["node", "bin/agent-state.js"]
+command = ["sh", "bin/node","bin/agent-state.js"]
 
 # The recent-first view dies with the server; restore it if it was chosen.
 [[startup]]
-command = ["node", "bin/agent-view.js", "--reapply"]
+command = ["sh", "bin/node","bin/agent-view.js", "--reapply"]
 
 # The one remaining agent-state hook is a WATCHDOG, not the wake mechanism.
 # The daemon wakes itself through its event subscription; this hook exists so
@@ -97,4 +97,4 @@ command = ["node", "bin/agent-view.js", "--reapply"]
 # the daemon publishes $harness_logo from its own snapshot.)
 [[events]]
 on = "pane.agent_detected"
-command = ["node", "bin/agent-state.js"]
+command = ["sh", "bin/node","bin/agent-state.js"]
