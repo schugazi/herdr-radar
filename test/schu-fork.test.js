@@ -68,6 +68,38 @@ test('agent status is subscribed per pane, since a bare entry rejects the whole 
   assert.ok(subs.every((s) => s.type !== 'pane.agent_status_changed' || s.pane_id));
 });
 
+// A pane moved to another workspace: Herdr lists it under a new id and keeps
+// the old id as an alias of it, so a clear sent to the old id wiped the moved
+// pane's row (it kept its title and lost model, effort and topic for good).
+test('a moved pane\'s old id is forgotten without a clear, while its new id is live', async (t) => {
+  const ipc = require('../lib/ipc');
+  const { Frame } = require('../lib/frame');
+  const reports = [];
+  t.mock.method(ipc, 'call', async (method, params) => {
+    if (method === 'pane.get') return { result: { pane: { pane_id: 'w2:p1' } } };
+    reports.push(params.pane_id);
+    return { result: {} };
+  });
+  const frame = new Frame('test');
+  frame.lastLine.set('w1:p2', 'painted');
+  frame.lastTokens.set('w1:p2', { d_model: 'Opus 5.5' });
+
+  let jobs = [];
+  frame.clearGone(new Set(['w2:p1']), 0, jobs);
+  await Promise.all(jobs);
+  assert.deepEqual(reports, [], 'the clear reached the moved pane through its old id');
+  assert.equal(frame.lastLine.has('w1:p2'), false, 'the old id is still tracked');
+  assert.equal(frame.lastTokens.has('w1:p2'), false);
+
+  // The other direction: the agent is gone from the moved pane too, so the
+  // tokens it carried over are ours to clear.
+  frame.lastLine.set('w1:p2', 'painted');
+  jobs = [];
+  frame.clearGone(new Set(), 0, jobs);
+  await Promise.all(jobs);
+  assert.deepEqual([...new Set(reports)], ['w1:p2'], 'a moved pane with no agent kept our tokens');
+});
+
 test('a resubscribe cancels the pending retry, so one subscription stays open', async () => {
   const net = require('node:net');
   const os = require('node:os');
