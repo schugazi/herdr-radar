@@ -16,6 +16,12 @@
 
 ---
 
+> [!IMPORTANT]
+> **This is schugazi's fork.** It never writes Herdr's or any terminal's config: the sidebar rows, keys and
+> icon-font setup are hand-owned (dotfiles), and it paints only the Agents panel. Install, settings and
+> uninstall below are the fork's; *Troubleshooting* is upstream's and still mentions removed actions
+> (`configure`, `unconfigure`, `install-font`, `uninstall-font`, `view-native`).
+
 ## What it is
 
 A [Herdr](https://herdr.dev) plugin that turns the sidebar's Agents list into something you
@@ -49,76 +55,17 @@ sessions of one project sit under one header, and the busiest project sits on to
 
 ## Quick start
 
-```sh
-herdr plugin install hhdebb/herdr-radar
-```
-
-That is the whole install. On its first start the plugin finishes the rest itself: it writes
-three managed blocks into Herdr's `config.toml` (fenced by marker comments, nothing outside
-them is touched), installs the icon font into your user font directory (no admin rights
-needed), and writes the codepoint map into Ghostty / kitty configs if they exist.
-
-> [!IMPORTANT]
-> Herdr starts plugins from its server at startup. If the sidebar has not changed after
-> installing, start the daemon once:
-> `herdr plugin action invoke hhdebb.herdr-radar.state-start`.
-> Restarting Herdr (`herdr server stop`, then `herdr`) works too, but it ends every process in
-> every pane. New terminal windows pick up the font; some terminals need a full restart.
-
-> [!NOTE]
-> Requires Herdr 0.9.0+ and Node 18+. Tested on Windows 11 and macOS; Linux not yet.
-> Terminals without a codepoint map (Windows Terminal, iTerm) and the tab bar not following
-> `cd` on Windows are covered under *Troubleshooting*.
-
-Two keys, optional — paste into `config.toml`. Both go through Herdr's prefix (`ctrl+b` by
-default), so they cannot collide with anything running inside a pane:
-
-```toml
-[[keys.command]]
-key = "prefix+a"
-type = "plugin_action"
-command = "hhdebb.herdr-radar.view-flip"       # order: active <-> recent
-
-[[keys.command]]
-key = "prefix+comma"
-type = "plugin_action"
-command = "hhdebb.herdr-radar.settings"        # settings popup
-```
-
-From a checkout instead of GitHub:
+A linked checkout (`~/herdr-plugins/radar`, listed in `~/.config/herdr/plugins.list` and linked by
+`herdr-plugins-sync`). Linking runs no startup hook, so start the daemon once after linking:
 
 ```sh
-git clone https://github.com/hhdebb/herdr-radar.git
-herdr plugin link ./herdr-radar
 herdr plugin action invoke hhdebb.herdr-radar.state-start
 ```
 
-`plugin link` runs no build step; the daemon does the same setup on its first start, which is
-what the third line is for.
-
-### Or hand it to an agent
-
-Paste this at a coding agent and it will do the install:
-
-```text
-Install the herdr-radar plugin for Herdr on this machine.
-
-1. herdr plugin install hhdebb/herdr-radar
-2. herdr plugin action invoke hhdebb.herdr-radar.state-start
-3. Check it took: `herdr plugin list` shows hhdebb.herdr-radar as enabled, and
-   `herdr agent list` shows a `sort_key` token on the panes that run an agent
-   (that one is written whatever state a pane is in; the logo token's name
-   changes with the state).
-
-Do NOT run `herdr server stop`, and do not kill the Herdr process. That ends
-every program in every pane, including whatever is running you. Nothing here
-needs a restart: the plugin configures itself on first start, and new terminal
-windows pick up the icon font on their own.
-
-Needs Herdr 0.9.0 or newer and Node 18 or newer. If the marks come out as
-boxes, the terminal has no codepoint map for them — that case and the rest are
-covered under Troubleshooting at https://github.com/hhdebb/herdr-radar
-```
+Everything else is hand-owned: the `[ui.sidebar.agents]` rows, the keys (`prefix+a` view-flip,
+`prefix+i` settings) and the `tab_bar_right` command in Herdr's `config.toml`; the icon font installed
+by hand and added to the terminal's font fallback. Commands run through `bin/node`, which finds nvm's
+node when Herdr's server PATH has none. Requires Herdr 0.9.0+ and Node 18+.
 
 ## What the sidebar looks like
 
@@ -228,13 +175,12 @@ such as `Claude: auth` still leaves the Claude mark in place.
 
 ## Settings
 
-`prefix+,` opens the settings popup: `↑↓` select, `←→` change, `↵` edit a text value, `r`
+`prefix+i` opens the settings popup: `↑↓` select, `←→` change, `↵` edit a text value, `r`
 reset to default, `s` save and apply, `q` close. Saving rewrites only the changed lines of
 the config file and restarts the daemon.
 
 | Option | Default | Does |
 | --- | --- | --- |
-| `agents_panel` | `plugin` | this plugin's panel, or `herdr` for Herdr's own |
 | `order` | `active` | `active` grouped by activity / `recent` flat / `off` Herdr's order |
 | `variant` | `auto` | logos from the icon font (`font`), plain Unicode (`text`), or `none`; `auto` recognises the font the plugin installed |
 | `done_hold` | `until_seen` | keep the tick until the pane is focused, or a number of seconds |
@@ -242,48 +188,23 @@ the config file and restarts the daemon.
 | `idle_grace_seconds` | `2.5` | idle must persist this long to count as a finished turn |
 | `activity_fresh_minutes` | `15` | how long after the last turn a pane still reads as fresh |
 | `activity_stale_minutes` | `120` | how long without a turn before the row dims |
-| `group_indent` | `2` | member indent under a header; `0` for a flat list |
 | `group_gap` | `true` | a blank row between groups |
 | `split_corner` | `false` | hang the other panes of a split screen off the first with a `├─` corner |
-| `reorder_workspaces` | `false` | make Herdr's workspace indices follow Radar's activity order |
-| `row_label` | `title` | what names an agent row: `title`, `tab` (the tab's name) or `both`; replaces `show_tab` |
 | `trim_group_prefix` | `true` | drop the workspace name from a title when the header above already shows it |
-| `worktree_mark` | `U+F418` | the mark on a worktree header, needs a Nerd Font; empty for none |
-| `follow_appearance` | `true` | switch Herdr's theme with the desktop's light/dark |
-| `colors.active_row_bg_light` | `#b9cdf2` | selected-row fill for a light theme; empty keeps the theme's own |
-| `colors.active_row_bg_dark` | `#414868` | selected-row fill for a dark theme |
+| `title_width` / `title2_width` | `20` / `22` | columns for the head row (after the mark) and every row under it; titles wrap at a space |
 
-`row_label` picks what names an agent row. `title` is the session's own title,
-`tab` is the name of the tab it runs in, and `both` puts the tab name in front of
-the title — what `show_tab = true` did, which still reads as `both`. Pick `tab`
-when you name tabs after their sessions, so the name is not written twice. A
-tab-only row keeps its title when the tab was never named (Herdr labels such a
-tab with its number).
-
-Set `reorder_workspaces = true` to make Herdr's actual workspace order follow Radar's
-most-active-first order, so the Spaces list reads in the same order as the Agents panel and
-the indexed jump lands on the row you are looking at. Worktree families stay together;
-workspaces with nothing running keep their relative order at the end, and the reorder stops
-while the panel is handed back to Herdr's own order. It is off by default because it changes
-the global Spaces order, which every connected client sees, and because the order then moves
-as you work — the number that reaches a project today is not the one that reaches it tomorrow.
-
-Herdr leaves the workspace jump **unbound by default** — `switch_tab` ships as `prefix+1..9`,
-the workspace one does not ship at all — so bind it before expecting the keys to do anything:
-
-```toml
-[keys]
-switch_workspace = "prefix+shift+1..9"
-```
+Fixed in the fork: a named tab heads the entry (state mark, colour, spinner) with the session title
+under it in two static rows (an unnamed tab, or one named after its title, keeps the title as the head;
+upstream's `row_label` is gone); member indent is Herdr's own 2-column hang (no `group_indent`); no
+worktree tree, no workspace reordering, no theme following and no colour overrides.
 
 The first two are live state; the rest live in
 `$(herdr plugin config-dir hhdebb.herdr-radar)/config.toml` and can be edited by hand —
 then `state-stop` and `state-start`. The file appears the first time the popup saves; before
 that, create it with the keys above (booleans unquoted: `group_gap = false`).
 
-Both this file and Herdr's `config.toml` can be symlinks into a dotfiles repository: the
-popup and `configure` write through the link to its target, so the link stays in place. (A
-link whose target is missing is written over, as a plain file.)
+The file can be a symlink into a dotfiles repository: the popup writes through the link to its
+target, so the link stays in place. (A link whose target is missing is written over, as a plain file.)
 
 ## Troubleshooting
 
@@ -376,16 +297,16 @@ idle. `herdr agent explain <pane> --verbose` shows which rules matched.
 
 ## Uninstall
 
-In this order — `unconfigure` stops the daemon, clears every token it wrote and removes the
-managed blocks, and it needs the plugin still installed to be invoked at all:
+In this order — `teardown` stops the daemon and clears every token it wrote (and the view), and it
+needs the plugin still linked to be invoked at all. Then drop the plugin's line from `plugins.list`,
+and the rows, keys and `tab_bar_right` command from Herdr's `config.toml` by hand:
 
 ```sh
-herdr plugin action invoke hhdebb.herdr-radar.unconfigure
-herdr plugin action invoke hhdebb.herdr-radar.uninstall-font
-herdr plugin uninstall hhdebb.herdr-radar
+herdr plugin action invoke hhdebb.herdr-radar.teardown
+herdr plugin unlink hhdebb.herdr-radar
 ```
 
-What stays is the state directory with its config backups,
+What stays is the state directory,
 `~/.local/state/herdr/plugins/hhdebb.herdr-radar` (`%LOCALAPPDATA%\herdr\plugins\...` on
 Windows); delete it by hand if you want nothing left.
 

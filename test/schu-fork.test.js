@@ -34,6 +34,18 @@ test('detail fields publish under the normal name unless the entry is stale', ()
   assert.equal(stale.title2_idle_stale, 'T2');
 });
 
+test('detail fields come from the detected agent only, so a dead Claude cannot outrank a Codex', () => {
+  const both = { model: 'Opus 5.5', effort: 'high', codex_model: 'gpt-6.1-sol', codex_effort: 'medium' };
+  assert.deepEqual(state.detailSources('codex', both), { model: 'gpt-6.1-sol', effort: 'medium', plan: null });
+  assert.equal(state.detailSources('claude', both).model, 'Opus 5.5');
+  assert.deepEqual(state.detailSources('gemini', both), {});
+});
+
+test('the retired d_tab pair is still owned, so purge clears an older daemon\'s value', () => {
+  assert.ok(state.OWNED_TOKENS.includes('d_tab'));
+  assert.ok(state.OWNED_TOKENS.includes('d_tab_stale'));
+});
+
 test('every published name is owned, so purge and the orphan sweep clear it', () => {
   const tokens = state.stateTokens('working', line, 'T', 'T2', { model: 'm', topic: 't', topic2: 't2' });
   for (const name of Object.keys(tokens)) {

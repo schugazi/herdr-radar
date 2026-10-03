@@ -94,32 +94,14 @@ const FIELDS = [
     fallback: 120,
     help: 'After this long without a turn an idle pane fades to stale.',
   },
-  {
-    key: 'group_indent',
-    kind: 'number',
-    step: 1,
-    min: 0,
-    max: 8,
-    fallback: 2,
-    help: 'Spaces members sit in under a workspace header; 0 = flat list.',
-  },
+  // schu fork: no group_indent (fixed to Herdr's hang, lib/config.js) and no
+  // row_label (the tab heads the entry, the title sits under it: lib/frame.js).
   { key: 'group_gap', kind: 'bool', fallback: true, help: 'A blank row between workspace groups.' },
   {
     key: 'split_corner',
     kind: 'bool',
     fallback: false,
     help: 'Hang the other panes of a split screen off the first with a corner; off draws them as plain rows.',
-  },
-  {
-    key: 'row_label',
-    kind: 'enum',
-    options: ['title', 'tab', 'both'],
-    fallback: 'title',
-    // A file from before this setting says `show_tab = true`, which renders
-    // as `both` (lib/config.js); the popup shows what renders, not the
-    // fallback.
-    legacy: (raw) => (raw.show_tab === true ? 'both' : undefined),
-    help: "What names an agent row: the session's title, its tab's name, or both.",
   },
   {
     key: 'trim_group_prefix',
