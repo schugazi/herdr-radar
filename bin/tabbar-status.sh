@@ -7,4 +7,8 @@
 d=${XDG_STATE_HOME:-$HOME/.local/state}/herdr/plugins/hhdebb.herdr-radar
 # The cmdline, not just kill -0: a pid file left by an unclean exit can name a reused pid.
 grep -qs agent-state.js "/proc/$(cat "$d/animator.pid" 2>/dev/null)/cmdline" && exit 0
-cd "$(dirname "$0")/.." && setsid sh bin/node bin/agent-state.js </dev/null >/dev/null 2>&1 &
+# Started in the foreground through the plugin's own launcher, never `setsid … &`: Herdr SIGKILLs a status
+# command's whole process group the moment it exits, and a backgrounded child that has not reached setsid()
+# yet dies with it (every time on multivac's WSL). Node's detached spawn returns only once the child has
+# left the group.
+cd "$(dirname "$0")/.." && exec sh bin/node bin/agent-state.js </dev/null >/dev/null 2>&1
