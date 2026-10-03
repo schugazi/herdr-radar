@@ -297,9 +297,11 @@ idle. `herdr agent explain <pane> --verbose` shows which rules matched.
 
 ## Uninstall
 
-In this order — `teardown` stops the daemon and clears every token it wrote (and the view), and it
-needs the plugin still linked to be invoked at all. Then drop the plugin's line from `plugins.list`,
-and the rows, keys and `tab_bar_right` command from Herdr's `config.toml` by hand:
+First take the `tab_bar_right` command (`bin/tabbar-status.sh`) out of Herdr's `config.toml` and
+reload it: that command restarts a dead daemon, so left in it brings the daemon back two seconds after
+`teardown`. Then, in this order — `teardown` stops the daemon and clears every token it wrote (and the
+view), and it needs the plugin still linked to be invoked at all. Then drop the plugin's line from
+`plugins.list`, and the rows and keys from Herdr's `config.toml` by hand:
 
 ```sh
 herdr plugin action invoke hhdebb.herdr-radar.teardown
