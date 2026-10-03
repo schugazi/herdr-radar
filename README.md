@@ -191,7 +191,7 @@ the config file and restarts the daemon.
 | `group_gap` | `true` | a blank row between groups |
 | `split_corner` | `false` | hang the other panes of a split screen off the first with a `├─` corner |
 | `trim_group_prefix` | `true` | drop the workspace name from a title when the header above already shows it |
-| `title_width` / `title2_width` | `16` / `22` | columns for the head row (after the mark, before ` · logo`) and every row under it; titles wrap at a space |
+| `title_width` / `title2_width` | `16` / `22` | columns for the head row (after the mark, before ` · logo`) and every row under it (a title's second row keeps 4 back for the logo); titles wrap at a space |
 
 Fixed in the fork: a named tab heads the entry (state mark, colour, spinner) with the session title
 under it in two static rows (an unnamed tab, or one named after its title, keeps the title as the head;

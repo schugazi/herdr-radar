@@ -41,6 +41,13 @@ test('detail fields come from the detected agent only, so a dead Claude cannot o
   assert.deepEqual(state.detailSources('gemini', both), {});
 });
 
+test('the logo follows the title\'s last row', () => {
+  assert.equal(state.stateTokens('idle', line, 'T', '').logo, 'L');
+  const wrapped = state.stateTokens('working', line, 'T', 'T2');
+  assert.equal(wrapped.logo_working, null);
+  assert.equal(wrapped.logo2_working, 'L');
+});
+
 test('the retired d_tab pair is still owned, so purge clears an older daemon\'s value', () => {
   assert.ok(state.OWNED_TOKENS.includes('d_tab'));
   assert.ok(state.OWNED_TOKENS.includes('d_tab_stale'));
