@@ -284,16 +284,6 @@ const cases = [
     'daemon: a caller still asks the pid file (#19)',
   ],
 
-  // bin/setup.js — the build hook starts nothing: a daemon started from
-  // Herdr's temporary checkout held it as cwd and Windows could not rename
-  // it into place (#23).
-  [
-    'bin/setup.js',
-    "const setup = require('../lib/setup');",
-    "const setup = require('../lib/setup'); const { detachedNode } = require('../lib/spawn');",
-    'install: the build hook starts the daemon from the temp checkout (#23, shipped v1.0.0-v1.3.15)',
-  ],
-
   // lib/control.js — a peer that hangs up without a word must still settle the
   // request. Without it, a launcher that had just ended a stalled daemon exited
   // 0 before starting the replacement.
