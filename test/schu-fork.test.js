@@ -137,3 +137,35 @@ test('a resubscribe cancels the pending retry, so one subscription stays open', 
     server.close();
   }
 });
+
+// A named session's daemon keeps its own activity stamps and view flag: pane
+// ids are per Herdr server, and so is the view override. The default session
+// keeps both in the state directory, where they always were.
+test('activity stamps and the view flag are per session', () => {
+  const { execFileSync } = require('node:child_process');
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'radar-session-'));
+  const write = (socket, at) =>
+    execFileSync(
+      process.execPath,
+      [
+        '-e',
+        `require('./lib/activity').save(new Map([['w0:p1', ${at}]]), 0, { force: true });` +
+          `require('./lib/view').setMode('recent');`,
+      ],
+      { cwd: path.join(__dirname, '..'), env: { ...process.env, HERDR_PLUGIN_STATE_DIR: dir, HERDR_SOCKET_PATH: socket } },
+    );
+  try {
+    write('/x/herdr/herdr.sock', 1);
+    write('/x/herdr/sessions/scratch/herdr.sock', 2);
+    const read = (...parts) => JSON.parse(fs.readFileSync(path.join(dir, ...parts), 'utf8'));
+    assert.deepEqual(read('activity.json'), { 'w0:p1': 1 });
+    assert.deepEqual(read('runtime-scratch', 'activity.json'), { 'w0:p1': 2 });
+    assert.ok(fs.existsSync(path.join(dir, 'agent-view.on')));
+    assert.ok(fs.existsSync(path.join(dir, 'runtime-scratch', 'agent-view.on')));
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

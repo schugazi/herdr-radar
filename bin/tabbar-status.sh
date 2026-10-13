@@ -5,6 +5,9 @@
 # Healthy costs one /proc read; only a missing daemon pays a node start. A deliberate state-stop is
 # undone within 2s too — to keep the daemon off (or uninstall), drop this from the status line first.
 d=${XDG_STATE_HOME:-$HOME/.local/state}/herdr/plugins/hhdebb.herdr-radar
+# A named session runs its own daemon, whose lock lives in runtime-<session> (lib/paths.js runtimeRoot);
+# Herdr sets HERDR_SESSION only in a named session's server, and the default session keeps $d itself.
+case ${HERDR_SESSION:-default} in default) ;; *) d=$d/runtime-$HERDR_SESSION ;; esac
 # The cmdline, not just kill -0: a pid file left by an unclean exit can name a reused pid.
 grep -qs agent-state.js "/proc/$(cat "$d/animator.pid" 2>/dev/null)/cmdline" && exit 0
 # Started in the foreground through the plugin's own launcher, never `setsid … &`: Herdr SIGKILLs a status

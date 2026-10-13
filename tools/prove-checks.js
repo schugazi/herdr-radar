@@ -320,7 +320,7 @@ const cases = [
   // lib/frame.js — a closed pane takes its other write backoffs with it.
   [
     'lib/frame.js',
-    "for (const kind of ['line', 'logo', 'sort']) this.failedAt.delete(`${kind}:${pane}`);",
+    "for (const kind of ['line', 'logo', 'sort', 'clear']) this.failedAt.delete(`${kind}:${pane}`);",
     '',
     'writes: a closed pane keeps an earlier backoff alive (#21)',
     true,
@@ -545,6 +545,58 @@ const cases = [
     'groups: a split corner survives zero indent',
     true,
     'test/indent-zero.test.js',
+  ],
+
+  // lib/frame.js, lib/state.js — a moved pane (new id, same terminal) is not a closed one.
+  [
+    'lib/frame.js',
+    '    this.followMoves(entries, now);\n',
+    '',
+    'moves: a moved pane is cleared under its old id, wiping the live row (shipped)',
+    true,
+    'test/pane-move.test.js',
+  ],
+  [
+    'lib/state.js',
+    "terminal: typeof a.terminal_id === 'string' ? a.terminal_id : '',",
+    "terminal: '',",
+    'moves: the snapshot carries no terminal id, so a move reads as a close (shipped)',
+    true,
+    'test/pane-move.test.js',
+  ],
+  [
+    'lib/frame.js',
+    '        if (map.has(from)) map.set(to, map.get(from));',
+    '        if (false) map.set(to, map.get(from));',
+    'moves: a moved pane loses its last turn and held badge (shipped)',
+    true,
+    'test/pane-move.test.js',
+  ],
+
+  // lib/paths.js, lib/tabline.js, lib/managed-config.js — one tab-bar line per session.
+  [
+    'lib/paths.js',
+    "named ? `tabbar-${session}.txt` : 'tabbar.txt'",
+    "'tabbar.txt'",
+    "sessions: every session writes one tab-bar file, so each shows the other's directory",
+    true,
+    'test/tabbar-session.test.js',
+  ],
+  [
+    'lib/tabline.js',
+    'const CACHE = () => (ensureDir(stateRoot), tabbarCache());',
+    "const CACHE = () => (ensureDir(stateRoot), tabbarCache(''));",
+    "sessions: a named session's daemon publishes to the default session's file",
+    true,
+    'test/tabbar-session.test.js',
+  ],
+  [
+    'lib/managed-config.js',
+    'return text.slice(start, end + BLOCK_END.length) !== block();',
+    'return false;',
+    'sessions: an upgrade keeps the old single-file tab-bar block',
+    true,
+    'test/tabbar-session.test.js',
   ],
 
   // lib/palette.js — every sidebar ink clears the contrast floor (#5).
