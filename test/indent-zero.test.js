@@ -11,9 +11,13 @@ const { Frame, splitTreeCorner } = require('../lib/frame');
 test('zero indent keeps headers, gaps, and worktree marks without corners', async (t) => {
   const sent = [];
   const previousMark = config.worktreeMark;
+  const previousGap = config.groupGap;
   config.worktreeMark = '*';
+  // Pinned: config loads the live plugin config.toml, which may set group_gap = false.
+  config.groupGap = true;
   t.after(() => {
     config.worktreeMark = previousMark;
+    config.groupGap = previousGap;
   });
   t.mock.method(herdr, 'reportMetadataAsync', async (pane, _source, tokens) => {
     sent.push([pane, tokens]);
