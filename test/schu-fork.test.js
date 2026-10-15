@@ -4,6 +4,9 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 
 const state = require('../lib/state');
 
@@ -18,20 +21,36 @@ test('splitTitle wraps at a space, cuts an overlong word, ellipsises row two', (
 const line = { mark: 'x', split: '', logo: 'L', titlePrefix: '' };
 
 test('detail fields publish under the normal name unless the entry is stale', () => {
-  const fresh = state.stateTokens('idle', line, 'T', 'T2', { model: 'Opus 5.5', topic: 'radar' });
+  const fresh = state.stateTokens('idle', line, 'T', 'T2', { model: 'Opus 5.5', topic: 'radar', divider: '────' });
   assert.equal(fresh.d_model, 'Opus 5.5');
   assert.equal(fresh.d_model_stale, null);
   assert.equal(fresh.d_topic, 'radar');
   assert.equal(fresh.d_topic2, null);
   assert.equal(fresh.d_effort, null);
+  assert.equal(fresh.d_divider, '────');
   assert.equal(fresh.title2_idle, 'T2');
   assert.equal(fresh.title2_working, null);
 
-  const stale = state.stateTokens('idle_stale', line, 'T', 'T2', { model: 'Opus 5.5', plan: '' });
+  const stale = state.stateTokens('idle_stale', line, 'T', 'T2', { model: 'Opus 5.5', plan: '', divider: '────' });
   assert.equal(stale.d_model, null);
   assert.equal(stale.d_model_stale, 'Opus 5.5');
   assert.equal(stale.d_plan_stale, null);
+  assert.equal(stale.d_divider_stale, '────');
   assert.equal(stale.title2_idle_stale, 'T2');
+});
+
+test('divider follows the narrowest local client and refreshes after a resize', (t) => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'radar-divider-'));
+  t.after(() => fs.rmSync(home, { recursive: true, force: true }));
+  t.mock.method(os, 'homedir', () => home);
+  const dir = path.join(home, '.local/state/herdr/client-shell');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'local-one.json'), '{"sidebar_width":31}');
+  fs.writeFileSync(path.join(dir, 'local-two.json'), '{"sidebar_width":29}');
+  const now = Date.now() + 10000;
+  assert.equal(state.sidebarDivider(now).length, 24);
+  fs.writeFileSync(path.join(dir, 'local-two.json'), '{"sidebar_width":33}');
+  assert.equal(state.sidebarDivider(now + 5001).length, 26);
 });
 
 test('detail fields come from the detected agent only, so a dead Claude cannot outrank a Codex', () => {
