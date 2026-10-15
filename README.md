@@ -62,7 +62,7 @@ A linked checkout (`~/herdr-plugins/radar`, listed in `~/.config/herdr/plugins.l
 herdr plugin action invoke hhdebb.herdr-radar.state-start
 ```
 
-Everything else is hand-owned: the `[ui.sidebar.agents]` rows, the keys (`prefix+a` view-flip,
+Everything else is hand-owned: the `[ui.sidebar.agents]` rows, the keys (`prefix+v` view-toggle,
 `prefix+i` settings) and the `tab_bar_right` command in Herdr's `config.toml`; the icon font installed
 by hand and added to the terminal's font fallback. Commands run through `bin/node`, which finds nvm's
 node when Herdr's server PATH has none. Requires Herdr 0.9.0+ and Node 18+.
@@ -81,9 +81,10 @@ billing
 ```
 
 One row per agent: logo, title, colour by state, motion and marks in front of the title. Two
-orders: `active` keeps the groups and ranks by activity at both levels; `recent` is a flat
-list by activity — `prefix+a` flips between them. The whole panel can be handed back to
-Herdr's own rendering from the settings popup.
+orders: `active` keeps the workspace groups in their Spaces-list order and ranks panes by
+activity within each; `recent` is a flat list by activity. `prefix+v` cycles `active` →
+`recent` → Herdr's own order → `active`. The whole panel can be handed back to Herdr's own
+rendering from the settings popup.
 
 ## What the colours mean
 
