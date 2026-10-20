@@ -1,5 +1,95 @@
 # Changelog
 
+## 1.4.9 — 2026-10-21
+
+- **An answered question stops showing red when a hook reports the
+  state.** Radar holds a pane's blocked mark through a brief idle, because
+  screen detection can misread a redraw as idle. When an agent's state
+  comes from a full-lifecycle hook instead, as with OpenCode's integration,
+  Herdr skips screen detection and says so, and that idle is the real
+  answer. Radar now clears the held mark on it. Without the hook, or on a
+  Herdr that does not send the field, nothing changes.
+  [#64](https://github.com/hhdebb/herdr-radar/pull/64) by @giannisCKS.
+
+- **The README says how to update.** On Herdr 0.9.4 and later,
+  `herdr plugin update` installs the new version, while the running daemon
+  keeps the old one until Herdr restarts. Running `state-stop` and then
+  `state-start` switches to the new one without touching your panes.
+
+## 1.4.8 — 2026-10-18
+
+- **The sidebar repaints in full after a live handoff.** A handoff
+  replaces Herdr's server under a daemon that keeps running, and the new
+  server holds none of the plugin's tokens. The daemon still remembered
+  every token as sent, so whatever had not changed since was never
+  written again: group headers, indents, logos and sort keys stayed
+  missing until the daemon was restarted. A reconnect now makes the next
+  frame write everything, and puts the chosen order back on the panel.
+
+- **The daemon runs on events again.** Its subscription listed the agent
+  status event without the pane id Herdr requires for it, and Herdr
+  refuses the whole request over one malformed entry. The stream never
+  opened, and the daemon ran on a one-second retry loop instead. The
+  stream opens now; agent status is picked up by a one-second heartbeat,
+  as quickly as before.
+
+  Both found and fixed by @noomz in
+  [#51](https://github.com/hhdebb/herdr-radar/pull/51).
+
+## 1.4.7 — 2026-10-17
+
+- **A Space with no agent no longer reads `· ·`.** Herdr puts its own ` · `
+  between a Spaces mark and the workspace name, and the mark for a
+  workspace with nothing running was a middle dot too, so a plain shell
+  workspace showed two dots that looked like two states. That mark is now
+  a small hollow bullet, `◦ · name`, still one narrow character, so the
+  names stay aligned. Reported in
+  [#61](https://github.com/hhdebb/herdr-radar/issues/61) by @86label and
+  [#63](https://github.com/hhdebb/herdr-radar/issues/63) by
+  @JasonLandbridge.
+
+## 1.4.6 — 2026-10-17
+
+- **No second copy of a repo for a worktree away from its family.** 1.4.5
+  stopped such a worktree from hanging a corner off the project above it
+  by drawing it as if its parent were absent, with the repo name on a row
+  of its own. When the parent was on the panel after all, just higher up,
+  that row was a duplicate of it. A worktree whose parent is listed but
+  not right above it is now drawn detached: a top-level row with its
+  worktree mark, no corner and no repo row.
+  [#62](https://github.com/hhdebb/herdr-radar/issues/62) reported by
+  @JasonLandbridge.
+
+- **The `active` order comes back on its own.** Herdr keeps the view
+  override in the server's memory only, so anything that replaced the
+  server without running the startup hook left the panel in Herdr's own
+  order, while the group headers were still placed for radar's. A header
+  then landed mid-group, and the panes above it read as part of the
+  project before. The daemon now sets the chosen order again every 15
+  seconds; Herdr's own order, once chosen, is left alone.
+  [#49](https://github.com/hhdebb/herdr-radar/issues/49) reported by
+  @PannenetsF.
+
+## 1.4.5 — 2026-10-15
+
+- **A worktree only gets a corner under its own project.** With `order =
+  off` the panel keeps Herdr's order, where a worktree opened later sits at
+  the end of the list — and its `├─` hung it off whichever project happened
+  to be above it. A worktree that is not directly under its parent (or an
+  attached sibling) is now drawn as one whose parent is absent: the repo
+  name on a row of its own, its own `└─` below. The plugin's own order holds
+  a family in one block, so nothing changes there.
+  [#54](https://github.com/hhdebb/herdr-radar/issues/54) reported by
+  @doominkim.
+
+- **Moved session records are found.** The stale shading for panes that
+  predate the daemon reads each CLI's own session record, but looked for
+  them under the home directory only. The lookup now honours
+  `CLAUDE_CONFIG_DIR` and `CODEX_HOME`, as Claude Code and Codex do; the
+  defaults are unchanged.
+  [#58](https://github.com/hhdebb/herdr-radar/issues/58) reported by
+  @cameronsjo.
+
 ## 1.4.4 — 2026-10-09
 
 - **Every named session gets its sidebar.** Herdr gives every session the

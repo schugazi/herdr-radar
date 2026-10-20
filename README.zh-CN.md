@@ -88,6 +88,22 @@ herdr plugin action invoke hhdebb.herdr-radar.state-start
 
 `plugin link` 不跑构建步骤，同样的初始化由守护进程首次启动时完成，第三行就是为此。
 
+### 更新
+
+Herdr 0.9.4 及以上：
+
+```sh
+herdr plugin update hhdebb.herdr-radar
+```
+
+已经在跑的守护进程会一直用它启动时的版本，直到 Herdr 重启。想马上换成新版，只重启守护进程即可，
+不影响任何面板：
+
+```sh
+herdr plugin action invoke hhdebb.herdr-radar.state-stop
+herdr plugin action invoke hhdebb.herdr-radar.state-start
+```
+
 ### 或者交给 agent 装
 
 把下面这段粘给任意编码 agent，它就知道怎么装：

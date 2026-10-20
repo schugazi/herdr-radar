@@ -95,6 +95,22 @@ herdr plugin action invoke hhdebb.herdr-radar.state-start
 `plugin link` はビルド手順を実行しません。同じセットアップはデーモンの初回起動が行うので、
 3 行目が必要です。
 
+### 更新
+
+Herdr 0.9.4 以降：
+
+```sh
+herdr plugin update hhdebb.herdr-radar
+```
+
+すでに動いているデーモンは、Herdr を再起動するまで起動時のバージョンのまま動き続けます。
+すぐ新しい版に切り替えるには、デーモンだけを再起動します。ペインには影響しません：
+
+```sh
+herdr plugin action invoke hhdebb.herdr-radar.state-stop
+herdr plugin action invoke hhdebb.herdr-radar.state-start
+```
+
 ### エージェントに任せる
 
 次のひとかたまりをコーディングエージェントに貼れば、そのままインストールします:
