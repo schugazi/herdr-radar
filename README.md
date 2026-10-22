@@ -197,7 +197,8 @@ the config file and restarts the daemon.
 Fixed in the fork: a named tab heads the entry (state mark, colour, spinner) with the session title
 under it in two static rows (an unnamed tab, or one named after its title, keeps the title as the head;
 upstream's `row_label` is gone); member indent is Herdr's own 2-column hang (no `group_indent`); no
-worktree tree, no workspace reordering, no theme following and no colour overrides.
+workspace reordering, no theme following and no colour overrides. The worktree tree needs a `$group_parent`
+row above `$group` in every hand-written row set (the repo row of a worktree whose checkout has no agent).
 
 The first two are live state; the rest live in
 `$(herdr plugin config-dir hhdebb.herdr-radar)/config.toml` and can be edited by hand —
