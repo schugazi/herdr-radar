@@ -39,6 +39,22 @@ test('detail fields publish under the normal name unless the entry is stale', ()
   assert.equal(stale.title2_idle_stale, 'T2');
 });
 
+test('a nested entry indents the first cell of every row under the title, not the divider', () => {
+  const nest = '​  ';
+  const detail = { model: 'Opus 5.5', effort: 'high', topic: 'radar', plan: 'plan', divider: '────' };
+  const tokens = state.stateTokens('idle', line, 'T', 'T2', detail, nest);
+  assert.equal(tokens.title2_idle, `${nest}T2`);
+  assert.equal(tokens.d_topic, `${nest}radar`);
+  assert.equal(tokens.d_model, `${nest}Opus 5.5`);
+  assert.equal(tokens.d_effort, 'high', 'a cell after the first in its row');
+  assert.equal(tokens.d_plan, `${nest}plan`);
+  assert.equal(tokens.d_divider, '────');
+  assert.equal(detail.model, 'Opus 5.5', 'the caller\'s detail is left alone');
+  // Effort's colour rules match the exact value, so it is never prefixed.
+  assert.equal(state.stateTokens('idle', line, 'T', '', { effort: 'low' }, nest).d_effort, 'low');
+  assert.equal(state.stateTokens('idle', line, 'T', '', { model: 'm' }).d_model, 'm');
+});
+
 test('divider follows the narrowest local client and refreshes after a resize', (t) => {
   const home = fs.mkdtempSync(path.join(os.tmpdir(), 'radar-divider-'));
   t.after(() => fs.rmSync(home, { recursive: true, force: true }));
