@@ -76,6 +76,73 @@ test('detail fields come from the detected agent only, so a dead Claude cannot o
   assert.deepEqual(state.detailSources('gemini', both), {});
 });
 
+test('the subagent row shortens the agents cell to its count beside background shells', () => {
+  const two = '2 agents: review, explore';
+  assert.deepEqual(state.claudeTasks(two), { agents: two, shells: null });
+  assert.deepEqual(state.claudeTasks(two, { shells: 1, monitors: 0 }), { agents: '2 agents', shells: '1 shell' });
+  assert.deepEqual(state.claudeTasks(null, { shells: 2, monitors: 1 }), { agents: null, shells: '2 shells · 1 monitor' });
+  assert.deepEqual(state.claudeTasks('', { shells: 0, monitors: 0 }), { agents: null, shells: null });
+});
+
+test('background tasks are counted per session even once a task has exec-ed away its shell', { skip: process.platform !== 'linux' }, async (t) => {
+  const { spawn } = require('node:child_process');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'radar-tasks-'));
+  fs.mkdirSync(path.join(dir, 'tasks'));
+  fs.mkdirSync(path.join(dir, 'projects/-x'), { recursive: true });
+  // b1 went to the background; b2 is a foreground command, the same in /proc.
+  fs.writeFileSync(
+    path.join(dir, 'projects/-x/radar-test.jsonl'),
+    '{"toolUseResult":{"stdout":"","backgroundTaskId":"b1"}}\n{"toolUseResult":{"stdout":"b2"}}\n',
+  );
+  const configDir = process.env.CLAUDE_CONFIG_DIR;
+  process.env.CLAUDE_CONFIG_DIR = dir;
+  const background = fs.openSync(path.join(dir, 'tasks/b1.output'), 'w');
+  const foreground = fs.openSync(path.join(dir, 'tasks/b2.output'), 'w');
+  const env = { ...process.env, CLAUDE_PID: String(process.pid), CLAUDE_CODE_SESSION_ID: 'radar-test' };
+  // `sleep` itself, no shell: what a task running `exec sleep …` leaves behind.
+  const children = [
+    spawn('sleep', ['5'], { env, stdio: ['ignore', background, background] }),
+    spawn('sleep', ['5'], { env, stdio: ['ignore', 'pipe', 'pipe'] }), // monitor: libuv pipes are sockets
+    spawn('sleep', ['5'], { env, stdio: ['ignore', foreground, foreground] }),
+    spawn('sleep', ['5'], { env, stdio: ['pipe', 'pipe', 'pipe'] }), // a hook: its stdin is the JSON it was handed
+    spawn('sleep', ['5'], { env: { ...env, CLAUDE_PID: '1' }, stdio: ['ignore', background, background] }), // not Claude's child
+  ];
+  t.after(() => {
+    for (const child of children) child.kill();
+    fs.closeSync(background);
+    fs.closeSync(foreground);
+    fs.rmSync(dir, { recursive: true, force: true });
+    if (configDir === undefined) delete process.env.CLAUDE_CONFIG_DIR;
+    else process.env.CLAUDE_CONFIG_DIR = configDir;
+  });
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  assert.deepEqual(state.backgroundTasks(Date.now() + 10000).get('radar-test'), { shells: 1, monitors: 1 });
+
+  // b2 moves to the background, its line landing in two writes: the half
+  // line is left for the next read, which finds the id whole.
+  const transcript = path.join(dir, 'projects/-x/radar-test.jsonl');
+  fs.appendFileSync(transcript, '{"toolUseResult":{"backgroundTaskId":"b');
+  assert.deepEqual(state.backgroundTasks(Date.now() + 20000).get('radar-test'), { shells: 1, monitors: 1 });
+  fs.appendFileSync(transcript, '2"}}\n');
+  assert.deepEqual(state.backgroundTasks(Date.now() + 30000).get('radar-test'), { shells: 2, monitors: 1 });
+
+  // A transcript replaced under its name is read again from the top, and an
+  // id straddling the 4 MiB chunk of a line too long for one is still found.
+  const chunk = 4 << 20;
+  const head = '{"stdout":"' + 'x'.repeat(chunk - 11 - 10) + '","backgroundTaskId":"b1"}\n';
+  fs.writeFileSync(`${transcript}.new`, head);
+  fs.renameSync(`${transcript}.new`, transcript);
+  assert.deepEqual(state.backgroundTasks(Date.now() + 40000).get('radar-test'), { shells: 1, monitors: 1 });
+});
+
+test('a nested entry indents the agents cell, not the shells beside it', () => {
+  const tokens = state.stateTokens('idle', line, 'T', '', { agents: '1 agent', shells: '1 shell' }, '​  ');
+  assert.equal(tokens.d_agents, '​  1 agent');
+  assert.equal(tokens.d_shells, '1 shell');
+  const shellsOnly = state.stateTokens('idle', line, 'T', '', { shells: '1 shell' }, '​  ');
+  assert.equal(shellsOnly.d_shells, '​  1 shell');
+});
+
 test('the logo follows the title\'s last row', () => {
   assert.equal(state.stateTokens('idle', line, 'T', '').logo, 'L');
   const wrapped = state.stateTokens('working', line, 'T', 'T2');
