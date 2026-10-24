@@ -81,6 +81,33 @@ test('a frame in flight keeps the timer counted as firing', async (t) => {
   assert.ok(s.fireAgeMs() <= 150, `the timer reads ${Math.round(s.fireAgeMs())}ms silent during a frame`);
 });
 
+// schu fork: a wake that drew a frame just before a spinner step must not push
+// the step a poll later. The floor holds back wakes, our own echoes among them;
+// a deadline the last frame asked for fires once and runs on time.
+test('a deadline right after a frame is not held back by the floor', async (t) => {
+  const times = [];
+  const s = scheduler(t, async () => {
+    times.push(performance.now());
+    if (times.length === 1) s.scheduleIn(20);
+  });
+  s.wake();
+  await pause(300);
+  assert.ok(times.length >= 2, 'the deadline never ran');
+  assert.ok(times[1] - times[0] < 100, `the deadline ran ${Math.round(times[1] - times[0])}ms after the frame`);
+});
+
+test('a wake right after a frame still waits out the floor', async (t) => {
+  const times = [];
+  const s = scheduler(t, async () => {
+    times.push(performance.now());
+    if (times.length === 1) s.wake();
+  });
+  s.wake();
+  await pause(400);
+  assert.ok(times.length >= 2, 'the second wake never ran');
+  assert.ok(times[1] - times[0] >= 120, `an echo ran ${Math.round(times[1] - times[0])}ms after the frame`);
+});
+
 test('no frame is running when none has started', (t) => {
   const s = scheduler(t, async () => {});
   assert.equal(s.runningForMs(), 0);
