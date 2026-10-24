@@ -81,31 +81,79 @@ test('a frame in flight keeps the timer counted as firing', async (t) => {
   assert.ok(s.fireAgeMs() <= 150, `the timer reads ${Math.round(s.fireAgeMs())}ms silent during a frame`);
 });
 
-// schu fork: a wake that drew a frame just before a spinner step must not push
-// the step a poll later. The floor holds back wakes, our own echoes among them;
-// a deadline the last frame asked for fires once and runs on time.
-test('a deadline right after a frame is not held back by the floor', async (t) => {
+// schu fork: the floor's cases below run on a fake clock and timer queue, so a
+// descheduled test process cannot move a frame. `early` makes every timer fire
+// that many ms before it is due, the way libuv's cached loop time can.
+function fakeScheduler(run, { early = 0 } = {}) {
+  let now = 0;
+  const queue = [];
+  const s = createScheduler({
+    floorMs: 120,
+    pollMs: 150,
+    debounceMs: 50,
+    run: () => run(now),
+    clock: () => now,
+    setTimer: (fn, ms) => {
+      const timer = { at: now + (ms > early ? ms - early : ms), fn };
+      queue.push(timer);
+      return timer;
+    },
+    clearTimer: (timer) => queue.splice(queue.indexOf(timer), 1),
+  });
+  // Fire every timer due by `until`, in order, letting each frame settle.
+  s.advance = async (until) => {
+    for (;;) {
+      queue.sort((a, b) => a.at - b.at);
+      if (!queue.length || queue[0].at > until) break;
+      const timer = queue.shift();
+      now = Math.max(now, timer.at);
+      timer.fn();
+      await new Promise(setImmediate);
+    }
+    now = until;
+  };
+  return s;
+}
+
+// A wake that drew a frame just before a spinner step must not push the step a
+// poll later. The floor holds back wakes, our own echoes among them; a deadline
+// the last frame asked for fires once and runs on time.
+test('a deadline right after a frame is not held back by the floor', async () => {
   const times = [];
-  const s = scheduler(t, async () => {
-    times.push(performance.now());
+  const s = fakeScheduler(async (now) => {
+    times.push(now);
     if (times.length === 1) s.scheduleIn(20);
   });
   s.wake();
-  await pause(300);
-  assert.ok(times.length >= 2, 'the deadline never ran');
-  assert.ok(times[1] - times[0] < 100, `the deadline ran ${Math.round(times[1] - times[0])}ms after the frame`);
+  await s.advance(1000);
+  assert.deepEqual(times, [50, 70]);
 });
 
-test('a wake right after a frame still waits out the floor', async (t) => {
+test('a wake right after a frame still waits out the floor', async () => {
   const times = [];
-  const s = scheduler(t, async () => {
-    times.push(performance.now());
+  const s = fakeScheduler(async (now) => {
+    times.push(now);
     if (times.length === 1) s.wake();
   });
   s.wake();
-  await pause(400);
-  assert.ok(times.length >= 2, 'the second wake never ran');
-  assert.ok(times[1] - times[0] >= 120, `an echo ran ${Math.round(times[1] - times[0])}ms after the frame`);
+  await s.advance(1000);
+  assert.deepEqual(times, [50, 200]);
+});
+
+// An early timer must not run the deadline's frame before its moment: that
+// frame draws the step already shown and asks for the same moment again.
+test('a deadline whose timer fires early still runs once, on time', async () => {
+  const times = [];
+  const s = fakeScheduler(
+    async (now) => {
+      times.push(now);
+      if (times.length === 1) s.scheduleIn(150);
+    },
+    { early: 1 },
+  );
+  s.wake();
+  await s.advance(1000);
+  assert.deepEqual(times, [49, 199]);
 });
 
 test('no frame is running when none has started', (t) => {
