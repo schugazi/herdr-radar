@@ -20,7 +20,8 @@
 > **This is schugazi's fork.** It never writes Herdr's or any terminal's config: the sidebar rows, keys and
 > icon-font setup are hand-owned (dotfiles), and it paints only the Agents panel. Install, settings and
 > uninstall below are the fork's; *Troubleshooting* is upstream's and still mentions removed actions
-> (`configure`, `unconfigure`, `install-font`, `uninstall-font`, `view-native`).
+> (`configure`, `unconfigure`, `install-font`, `uninstall-font`, `view-native`). The Chinese and Japanese
+> READMEs are upstream's throughout.
 
 ## What it is
 
@@ -206,10 +207,9 @@ that, create it with the keys above (booleans unquoted: `group_gap = false`).
 The file can be a symlink into a dotfiles repository: the popup writes through the link to its
 target, so the link stays in place. (A link whose target is missing is written over, as a plain file.)
 
-Fork: when `config.toml` is shared by several hosts (dotfiles), a `config.<hostname>.toml` beside it
-(hostname up to its first dot) is read over it on that host alone, key by key (a table there replaces
-the whole table). That is where `multi_machine` goes, so only the hosts that want their name on the
-headers show it. The popup edits `config.toml` only; after editing the host file, `state-restart`.
+Fork: a `config.<hostname>.toml` beside it (hostname up to its first dot) is read over it on that
+host alone, key by key (a table there replaces the whole table), for settings that differ per host
+when `config.toml` is shared through dotfiles, such as `multi_machine`. Edit it by hand, then `state-restart`.
 
 ## Troubleshooting
 
