@@ -100,8 +100,7 @@ herdr plugin update hhdebb.herdr-radar
 不影响任何面板：
 
 ```sh
-herdr plugin action invoke hhdebb.herdr-radar.state-stop
-herdr plugin action invoke hhdebb.herdr-radar.state-start
+herdr plugin action invoke hhdebb.herdr-radar.state-restart
 ```
 
 ### 或者交给 agent 装
@@ -229,6 +228,8 @@ exec claude "$@"
 | `group_indent` | `2` | 树的每层缩进空格数；`0` 时表头和空行保留，但不画树线；平铺列表用 `prefix+a` |
 | `group_gap` | `true` | 组之间留空行 |
 | `split_corner` | `false` | 分屏的其余面板用 `├─` 角标挂在第一个下面 |
+| `multi_machine` | `false` | 在每个工作区表头后面加上机器名，如 `web · Machine-One`，用于区分已保存的 SSH 机器上的会话；每台机器各自设置，因为表头由各机器自己写 |
+| `machine_label` | `""` | `multi_machine` 显示的名字；留空用主机名 |
 | `row_label` | `title` | 行显示什么：`title` 会话标题、`tab` tab 名、`both` 两者都显示（原 `show_tab = true`） |
 | `trim_group_prefix` | `true` | 标题开头与分组表头同名时去掉那一截 |
 | `worktree_mark` | `U+F418` | worktree 表头的标记，需要 Nerd Font；置空不画 |
@@ -237,7 +238,7 @@ exec claude "$@"
 | `colors.active_row_bg_dark` | `#414868` | 深色主题的选中行底色 |
 
 前两项是实时状态，其余存在 `$(herdr plugin config-dir hhdebb.herdr-radar)/config.toml`，
-手改也行，改完 `state-stop` 再 `state-start`。这个文件在弹窗第一次保存时才出现，之前要手改就按上表的键
+手改也行，改完运行 `state-restart`。这个文件在弹窗第一次保存时才出现，之前要手改就按上表的键
 自己建一个（布尔值不加引号：`group_gap = false`）。
 
 ## 常见问题
@@ -278,7 +279,7 @@ Ghostty 上只有 `ghostty +show-face` 能说明映射到底生没生效，`+sho
 <details>
 <summary><b>改了配置没生效</b></summary>
 
-守护进程只在启动时读配置。设置弹窗里按 `s` 会自动重启；手改文件后 `state-stop` 再 `state-start`。
+守护进程只在启动时读配置。设置弹窗里按 `s` 会自动重启；手改文件后运行 `state-restart`。
 直接改 `config.toml` 里的三个托管块不算数，下次 `configure` 会写回去。
 </details>
 

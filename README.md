@@ -191,6 +191,8 @@ the config file and restarts the daemon.
 | `activity_stale_minutes` | `120` | how long without a turn before the row dims |
 | `group_gap` | `true` | a blank row between groups |
 | `split_corner` | `false` | hang the other panes of a split screen off the first with a `├─` corner |
+| `multi_machine` | `false` | put the machine's name after each workspace header, `web · Machine-One`, for sessions on saved SSH machines; set it on each machine, since each one names its own |
+| `machine_label` | `""` | the name `multi_machine` shows; empty uses the hostname |
 | `trim_group_prefix` | `true` | drop the workspace name from a title when the header above already shows it |
 | `title_width` / `title2_width` | `16` / `22` | columns for the head row (after the mark, before ` · logo`) and every row under it (a title's second row keeps 4 back for the logo); titles wrap at a space |
 
@@ -198,7 +200,7 @@ Fixed in the fork: Claude entries use their session title when available, otherw
 
 The first two are live state; the rest live in
 `$(herdr plugin config-dir hhdebb.herdr-radar)/config.toml` and can be edited by hand —
-then `state-stop` and `state-start`. The file appears the first time the popup saves; before
+then `state-restart`. The file appears the first time the popup saves; before
 that, create it with the keys above (booleans unquoted: `group_gap = false`).
 
 The file can be a symlink into a dotfiles repository: the popup writes through the link to its
@@ -258,7 +260,7 @@ versions refused the whole install instead, with the reason only in the plugin l
 <summary><b>Changed a setting, nothing happened</b></summary>
 
 The daemon reads its config at start. `s` in the settings popup restarts it; after a hand edit,
-`state-stop` then `state-start`. Editing the three managed blocks in `config.toml` directly
+`state-restart`. Editing the three managed blocks in `config.toml` directly
 does not stick — the next `configure` writes them back.
 </details>
 

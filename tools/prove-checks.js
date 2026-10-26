@@ -204,9 +204,21 @@ const cases = [
   // lib/state.js — a vendor we can name must never end up nameless (#10).
   [
     'lib/state.js',
-    'if (!clean || locationOnly(clean, cwd)) return nameFor(agent) ?? clean;',
-    'if (locationOnly(clean, cwd)) return nameFor(agent) ?? clean;',
+    'if (!clean || locationOnly(clean, cwd, !WRITES_OWN_TITLE.has(agent))) return nameFor(agent) ?? clean;',
+    'if (locationOnly(clean, cwd, !WRITES_OWN_TITLE.has(agent))) return nameFor(agent) ?? clean;',
     'title: no fallback for an empty title (#10, shipped v1.0.0–v1.3.9)',
+  ],
+  [
+    'lib/state.js',
+    'if (!clean || locationOnly(clean, cwd, !WRITES_OWN_TITLE.has(agent))) return nameFor(agent) ?? clean;',
+    'if (!clean || locationOnly(clean, cwd, true)) return nameFor(agent) ?? clean;',
+    'title: a Claude Code session named after its folder shows "Claude Code" (#66, shipped through v1.4.9)',
+  ],
+  [
+    'lib/state.js',
+    'if (!clean || locationOnly(clean, cwd, !WRITES_OWN_TITLE.has(agent))) return nameFor(agent) ?? clean;',
+    'if (!clean || locationOnly(clean, cwd, false)) return nameFor(agent) ?? clean;',
+    "title: codex's bare-folder title stays instead of naming the vendor",
   ],
   [
     'lib/state.js',
@@ -217,7 +229,7 @@ const cases = [
   // The other direction: a title that says something must keep saying it.
   [
     'lib/state.js',
-    'if (!clean || locationOnly(clean, cwd)) return nameFor(agent) ?? clean;\n  return clean;',
+    'if (!clean || locationOnly(clean, cwd, !WRITES_OWN_TITLE.has(agent))) return nameFor(agent) ?? clean;\n  return clean;',
     'return nameFor(agent) ?? clean;',
     'title: vendor name always wins, so real titles are lost',
   ],
@@ -640,6 +652,46 @@ const cases = [
     'blocked: an authoritative idle no longer clears the hold, so an answered question stays red',
     true,
     'test/blocked-authoritative-idle.test.js',
+  ],
+
+  // lib/state.js, lib/config.js — `multi_machine` names the machine on the
+  // header, and only while it is on.
+  [
+    'lib/state.js',
+    "      const machine = config.machineLabel ? ` · ${config.machineLabel}` : '';\n",
+    "      const machine = '';\n",
+    'machines: the header drops the machine, so a remote session reads as a local one',
+    true,
+    'test/machine-label.test.js',
+  ],
+  [
+    'lib/config.js',
+    '    raw.multi_machine === true\n',
+    '    true\n',
+    'machines: the label shows with multi_machine off, so a single-machine panel changes',
+    true,
+    'test/machine-label.test.js',
+  ],
+
+  // bin/agent-state.js — `state-restart` starts only once the old daemon has
+  // gone (#65).
+  [
+    'bin/agent-state.js',
+    '  await stopAnimator();\n',
+    '  stopAnimator();\n',
+    'restart: the start runs beside the stop, finds the old daemon healthy, and nothing replaces it',
+    true,
+    'test/restart.test.js',
+  ],
+
+  // bin/settings.js — a save writes every value so it reads back as itself.
+  [
+    'bin/settings.js',
+    '  if (!/["\\\\]/.test(text)) return `"${text}"`;\n',
+    '  return `"${text}"`;\n',
+    'settings: a save double-quotes a value holding a quote, so the line breaks',
+    true,
+    'test/settings-literal.test.js',
   ],
 ];
 

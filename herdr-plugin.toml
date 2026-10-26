@@ -1,6 +1,6 @@
 id = "hhdebb.herdr-radar"
 name = "Herdr Radar"
-version = "1.4.9"
+version = "1.5.0"
 min_herdr_version = "0.9.0"
 description = "Who's working, who's waiting on you — grouped by project, each agent in its vendor's logo and colour. Worktrees nest under their repo, rows order by activity, idle sessions fade. Light and dark."
 platforms = ["linux", "macos", "windows"]
@@ -45,6 +45,12 @@ id = "state-stop"
 title = "Agent state: stop animator"
 description = "Stop the lifecycle-state glyph animator and clear its marks. Titles and sort keys stay so the list stays readable; teardown clears everything."
 command = ["sh", "bin/node","bin/agent-state.js", "--stop"]
+
+[[actions]]
+id = "state-restart"
+title = "Agent state: restart animator"
+description = "Stop the animator, then start a fresh one, for example after updating the plugin."
+command = ["sh", "bin/node","bin/agent-state.js", "--restart"]
 
 # Herdr disables the panel's own grouped/priority toggle while an agent-view
 # override is active, so this action is both the way into the recent-first

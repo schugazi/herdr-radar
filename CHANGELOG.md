@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.5.0 — 2026-10-27
+
+- **Workspace headers can name their machine.** Herdr shows sessions from
+  saved SSH machines in one panel, and two workspaces called `web` on
+  different machines had identical headers. Set `multi_machine = true` and
+  each header reads `web · Machine-One`. `machine_label` picks the name,
+  and the hostname is used when it is empty. Set it on each machine, since
+  each one writes its own headers. Off by default, and nothing changes
+  while it is off. Both settings are in the settings popup.
+  [#70](https://github.com/hhdebb/herdr-radar/pull/70) by @wapenshaw.
+
+- **`state-restart` restarts the daemon in one step.** The README's
+  `state-stop` then `state-start` could leave no daemon at all:
+  `herdr plugin action invoke` returns as soon as the command starts, so
+  the two ran side by side, and the start found the old daemon still
+  answering and did nothing. The new action stops the daemon, waits until
+  it has gone, then starts a new one, and the README now uses it.
+  [#65](https://github.com/hhdebb/herdr-radar/issues/65)
+
+- **A session named after its folder keeps its name.** A Claude Code
+  session called `design` in a folder called `design` showed as "Claude
+  Code". The folder-name rule is meant for codex, which writes no title of
+  its own; Claude Code and grok do, so their titles now stay.
+  [#66](https://github.com/hhdebb/herdr-radar/issues/66)
+
+- **A server that hangs up without replying no longer freezes the
+  sidebar.** Such a call never finished, so the frame waiting on it never
+  ended, and each one held one of the sixteen call slots for good. It now
+  ends as a failed call.
+  [#68](https://github.com/hhdebb/herdr-radar/pull/68) by @aboynamedcrow.
+
 ## 1.4.9 — 2026-10-21
 
 - **An answered question stops showing red when a hook reports the
