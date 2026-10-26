@@ -191,8 +191,8 @@ the config file and restarts the daemon.
 | `activity_stale_minutes` | `120` | how long without a turn before the row dims |
 | `group_gap` | `true` | a blank row between groups |
 | `split_corner` | `false` | hang the other panes of a split screen off the first with a `├─` corner |
-| `multi_machine` | `false` | put the machine's name after each workspace header, `web · Machine-One`, for sessions on saved SSH machines; set it on each machine, since each one names its own |
-| `machine_label` | `""` | the name `multi_machine` shows; empty uses the hostname |
+| `multi_machine` | `false` | put the machine's name after each workspace header, `web · Machine-One`, for sessions on saved SSH machines; per host, in `config.<hostname>.toml` (below), not in the popup |
+| `machine_label` | `""` | the name `multi_machine` shows; empty uses the hostname; per host like `multi_machine` |
 | `trim_group_prefix` | `true` | drop the workspace name from a title when the header above already shows it |
 | `title_width` / `title2_width` | `16` / `22` | columns for the head row (after the mark, before ` · logo`) and every row under it (a title's second row keeps 4 back for the logo); titles wrap at a space |
 
@@ -205,6 +205,11 @@ that, create it with the keys above (booleans unquoted: `group_gap = false`).
 
 The file can be a symlink into a dotfiles repository: the popup writes through the link to its
 target, so the link stays in place. (A link whose target is missing is written over, as a plain file.)
+
+Fork: when `config.toml` is shared by several hosts (dotfiles), a `config.<hostname>.toml` beside it
+(hostname up to its first dot) is read over it on that host alone, key by key (a table there replaces
+the whole table). That is where `multi_machine` goes, so only the hosts that want their name on the
+headers show it. The popup edits `config.toml` only; after editing the host file, `state-restart`.
 
 ## Troubleshooting
 

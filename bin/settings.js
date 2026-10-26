@@ -103,18 +103,9 @@ const FIELDS = [
     fallback: false,
     help: 'Hang the other panes of a split screen off the first with a corner; off draws them as plain rows.',
   },
-  {
-    key: 'multi_machine',
-    kind: 'bool',
-    fallback: false,
-    help: "Put this machine's name after each workspace header, for sessions on saved SSH machines. Set it on each machine.",
-  },
-  {
-    key: 'machine_label',
-    kind: 'text',
-    fallback: '',
-    help: 'The name multi_machine shows, e.g. web · Machine-One. Empty = the hostname.',
-  },
+  // schu fork: no multi_machine or machine_label here. They are per host, in
+  // config.<hostname>.toml (lib/config.js load); this popup edits the shared
+  // config.toml, so it would show them wrong and turn them on everywhere.
   {
     key: 'trim_group_prefix',
     kind: 'bool',

@@ -98,3 +98,37 @@ test('multi_machine gates the label, and an empty label is the hostname', (t) =>
   );
   assert.equal(load('multi_machine = true').machineLabel, os.hostname().split('.')[0]);
 });
+
+// schu fork: config.toml is shared across hosts, so the switch lives in
+// config.<hostname>.toml, read over it; another host's file changes nothing.
+test('config.<hostname>.toml is read over config.toml, for this host only', (t) => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'radar-machine-host-'));
+  const before = process.env.HERDR_PLUGIN_CONFIG_DIR;
+  t.after(() => {
+    if (before === undefined) delete process.env.HERDR_PLUGIN_CONFIG_DIR;
+    else process.env.HERDR_PLUGIN_CONFIG_DIR = before;
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+  process.env.HERDR_PLUGIN_CONFIG_DIR = dir;
+  const load = () => {
+    const file = require.resolve('../lib/config');
+    delete require.cache[file];
+    try {
+      return require(file);
+    } finally {
+      delete require.cache[file];
+    }
+  };
+  const host = os.hostname().split('.')[0];
+  fs.writeFileSync(path.join(dir, 'config.toml'), 'multi_machine = false\ngroup_gap = false\n');
+  fs.writeFileSync(path.join(dir, `config.not-${host}.toml`), 'multi_machine = true\n');
+  assert.equal(load().machineLabel, '', "another host's file is not read");
+
+  fs.writeFileSync(path.join(dir, `config.${host}.toml`), 'multi_machine = true\nmachine_label = "Here"\n');
+  const config = load();
+  assert.equal(config.machineLabel, 'Here');
+  assert.equal(config.groupGap, false, 'keys the host file leaves out still come from config.toml');
+});

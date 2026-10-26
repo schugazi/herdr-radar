@@ -672,6 +672,14 @@ const cases = [
     true,
     'test/machine-label.test.js',
   ],
+  [
+    'lib/config.js',
+    "  return { ...read('config.toml'), ...read(`config.${os.hostname().split('.')[0]}.toml`) };\n",
+    "  return read('config.toml');\n",
+    'machines (schu fork): the host file is ignored, so multi_machine is all hosts or none',
+    true,
+    'test/machine-label.test.js',
+  ],
 
   // bin/agent-state.js — `state-restart` starts only once the old daemon has
   // gone (#65).
