@@ -23,6 +23,12 @@
 > (`configure`, `unconfigure`, `install-font`, `uninstall-font`, `view-native`). The Chinese and Japanese
 > READMEs are upstream's throughout.
 
+> [!NOTE]
+> **Maintenance mode.** Herdr's new app, herdr-app, now has much of this built in: grouping,
+> vendor logos and clearer working status. herdr-radar stays a plugin for the Herdr TUI: it keeps
+> up with new Herdr releases and bugs get fixed, and small fixes are welcome as PRs, but it won't
+> get new features. See [#73](https://github.com/hhdebb/herdr-radar/issues/73).
+
 ## What it is
 
 A [Herdr](https://herdr.dev) plugin that turns the sidebar's Agents list into something you
@@ -184,7 +190,7 @@ the config file and restarts the daemon.
 | Option | Default | Does |
 | --- | --- | --- |
 | `order` | `active` | `active` grouped by activity / `recent` flat / `off` Herdr's order |
-| `variant` | `auto` | logos from the icon font (`font`), plain Unicode (`text`), or `none`; `auto` recognises the font the plugin installed |
+| `variant` | `auto` | logos from the icon font (`font`), plain Unicode (`text`), or `none`; `auto` picks `font` once the plugin's font is installed, whether or not the terminal can map it (see *Troubleshooting*) |
 | `done_hold` | `until_seen` | keep the tick until the pane is focused, or a number of seconds |
 | `blocked_hold` | `true` | keep the question mark until the agent works again |
 | `idle_grace_seconds` | `2.5` | idle must persist this long to count as a finished turn |
@@ -224,14 +230,16 @@ terminal and reopen it. macOS keeps an extra cache: `killall fontd fontworker`, 
 </details>
 
 <details>
-<summary><b>A logo renders as a random CJK character</b></summary>
+<summary><b>A logo or status mark renders as a random CJK character</b></summary>
 
 Another font claimed the same Private Use Area — CJK fonts often do. The terminal must map the
 codepoints to `Herdr Agent Icons Max`; adding it as a fallback family is not enough. Ghostty /
 kitty: `herdr plugin action invoke hhdebb.herdr-radar.install-font` writes the map. Other
 terminals: map `U+E1A0–U+E1BA` and `U+E1C0–U+E1C5` by hand. Terminals with no codepoint map
-(Windows Terminal, iTerm): use `dist/JetBrainsMonoHerdr-Regular.ttf` as the terminal font —
-JetBrains Mono with the icons patched in.
+(Windows Terminal, iTerm, Alacritty) have two ways out: use `dist/JetBrainsMonoHerdr-Regular.ttf`
+as the terminal font — JetBrains Mono with the icons patched in — or set `variant = "text"`
+(`prefix+,`), which draws every mark in plain Unicode. `variant = "auto"` cannot make this
+choice for you: it sees that the font is installed, not whether the terminal maps it.
 
 On Ghostty, `ghostty +show-face` is the only command that says whether the map resolved;
 `+show-config` and `+list-fonts` pass either way. The map written by v1.3.7 and earlier was
