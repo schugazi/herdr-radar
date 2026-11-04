@@ -114,6 +114,52 @@ test('an unseen done badge survives working frames before the token', (t) => {
   assert.equal(frame.displayFor(entry(), 3000, []), 'done');
 });
 
+// What Herdr really reports: its own unseen `done` once the spinner stops,
+// lasting until the pane is looked at. The hook's release turns the token
+// into `after`, which the next real turn's prompt or Stop clears.
+test("Herdr's own done after an idle compaction is the compaction's too", (t) => {
+  const frame = paneFrame(t);
+  const shown = [
+    frame.displayFor(entry(), 1000, []),
+    frame.displayFor(entry({ status: 'working', idleCompact: true }), 2000, []),
+    frame.displayFor(entry({ status: 'done', idleCompact: true }), 3000, []),
+    frame.displayFor(entry({ status: 'done', compactAfter: true }), 4000, []),
+    frame.displayFor(entry({ status: 'done', compactAfter: true }), 60_000, []),
+  ];
+  assert.deepEqual(shown, ['idle', 'idle', 'idle', 'idle', 'idle']);
+  assert.equal(frame.doneUntil.has(PANE), false, 'a done badge was set');
+});
+
+test("Herdr's done straight after the hold, with no frame in between, is masked", (t) => {
+  const frame = paneFrame(t);
+  frame.displayFor(entry(), 1000, []);
+  frame.displayFor(entry({ status: 'working', idleCompact: true }), 2000, []);
+  assert.equal(frame.displayFor(entry({ status: 'done', compactAfter: true }), 3000, []), 'idle');
+});
+
+// The prompt or Stop clears the token; Radar may never sample the `working`.
+test("a real turn's done shows even when its working fell between snapshots", (t) => {
+  const frame = paneFrame(t);
+  frame.displayFor(entry(), 1000, []);
+  frame.displayFor(entry({ status: 'working', idleCompact: true }), 2000, []);
+  assert.equal(frame.displayFor(entry({ status: 'done', compactAfter: true }), 3000, []), 'idle');
+  assert.equal(frame.displayFor(entry({ status: 'done' }), 9000, []), 'done');
+  assert.equal(frame.compactDone.has(PANE), false);
+});
+
+test('the mask ends when Herdr leaves done, and a real turn still leaves a badge', (t) => {
+  const frame = paneFrame(t);
+  frame.displayFor(entry(), 1000, []);
+  frame.displayFor(entry({ status: 'working', idleCompact: true }), 2000, []);
+  frame.displayFor(entry({ status: 'done', compactAfter: true }), 3000, []);
+  assert.equal(frame.displayFor(entry({ status: 'working' }), 4000, []), 'working');
+  assert.equal(frame.displayFor(entry({ status: 'done' }), 5000, []), 'done');
+  // Looked at, then a later unrelated done: also not masked.
+  frame.displayFor(entry({ focused: true }), 6000, []);
+  frame.displayFor(entry({ status: 'working' }), 7000, []);
+  assert.equal(frame.displayFor(entry({ status: 'done' }), 8000, []), 'done');
+});
+
 test('a pane this instance never saw has nothing to hold', (t) => {
   const frame = paneFrame(t);
   assert.equal(frame.displayFor(entry({ status: 'working', idleCompact: true }), 1000, []), 'working');
@@ -125,10 +171,19 @@ test('the snapshot reads idle_compact on Claude panes only', async (t) => {
     { pane_id: 'w:p2', agent: 'claude', agent_status: 'working', tokens: { idle_compact: '' } },
     { pane_id: 'w:p3', agent: 'codex', agent_status: 'working', tokens: { idle_compact: '1' } },
     { pane_id: 'w:p4', agent: 'claude', agent_status: 'working', tokens: {} },
+    { pane_id: 'w:p5', agent: 'claude', agent_status: 'done', tokens: { idle_compact: 'after' } },
+    { pane_id: 'w:p6', agent: 'codex', agent_status: 'done', tokens: { idle_compact: 'after' } },
   ]);
   const entries = await state.snapshot();
   assert.deepEqual(
-    entries.map((e) => e.idleCompact),
-    [true, false, false, false],
+    entries.map((e) => [e.idleCompact, e.compactAfter]),
+    [
+      [true, false],
+      [false, false],
+      [false, false],
+      [false, false],
+      [false, true],
+      [false, false],
+    ],
   );
 });
