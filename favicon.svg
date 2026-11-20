@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- herdr-radar: a radar sweep with a blip, in the host's teal and gold. -->
+  <rect width="64" height="64" rx="12" fill="#3f8a96"/>
+  <g fill="none" stroke="#fdcd03" stroke-width="3.5">
+    <circle cx="32" cy="32" r="23"/>
+    <circle cx="32" cy="32" r="13"/>
+  </g>
+  <path d="M32 32V9A23 23 0 0 1 53.6 24.1Z" fill="#fdcd03"/>
+  <circle cx="32" cy="32" r="3.5" fill="#fdcd03"/>
+  <circle cx="22" cy="43" r="4" fill="#fdcd03"/>
+</svg>
